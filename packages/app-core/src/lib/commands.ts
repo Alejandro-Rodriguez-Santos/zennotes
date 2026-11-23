@@ -2336,7 +2336,7 @@ export function buildCommands(options?: { includeUnavailable?: boolean }): Comma
       keywords: 'pdf page link source cite citation location position zoom copy paper',
       unavailableReason: () => 'Open a PDF in a tab or the reference pane first',
       when: () =>
-        typeof window.zen.readPdfViewLocation === 'function' && pdfFrameForCommand() !== null,
+        pdfFrameForCommand() !== null,
       run: async () => {
         await copyPdfLocationLink(pdfFrameForCommand())
       }

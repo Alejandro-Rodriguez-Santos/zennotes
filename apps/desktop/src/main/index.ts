@@ -1,3 +1,4 @@
+import { pdfjsAssetFile } from './pdfjs-assets';
 import {
   app,
   autoUpdater as nativeAutoUpdater,
@@ -395,6 +396,7 @@ const EXCALIDRAW_ASSET_SCHEME = "zen-excalidraw";
 const TYPST_ASSET_SCHEME = "zen-typst";
 // Harper's grammar checker fetches its wasm from a worker; same delivery as Typst.
 const HARPER_ASSET_SCHEME = "zen-harper";
+const PDFJS_ASSET_SCHEME = "zen-pdfjs";
 
 const PRIVILEGED_ASSET_PRIVILEGES = {
   standard: true,
@@ -410,6 +412,7 @@ protocol.registerSchemesAsPrivileged([
   { scheme: EXCALIDRAW_ASSET_SCHEME, privileges: PRIVILEGED_ASSET_PRIVILEGES },
   { scheme: TYPST_ASSET_SCHEME, privileges: PRIVILEGED_ASSET_PRIVILEGES },
   { scheme: HARPER_ASSET_SCHEME, privileges: PRIVILEGED_ASSET_PRIVILEGES },
+  { scheme: PDFJS_ASSET_SCHEME, privileges: PRIVILEGED_ASSET_PRIVILEGES },
 ]);
 
 // The archive this process booted from, watched for a package manager
@@ -6768,6 +6771,17 @@ app.whenReady().then(async () => {
   };
   protocol.handle(TYPST_ASSET_SCHEME, serveRendererAsset);
   protocol.handle(HARPER_ASSET_SCHEME, serveRendererAsset);
+  protocol.handle(PDFJS_ASSET_SCHEME, async (request) => {
+    const asset = pdfjsAssetFile(path.resolve(__dirname, "../renderer/pdfjs-assets"), request.url);
+    if (!asset) return new Response("Not found", { status: 404 });
+    try {
+      return new Response(await fsp.readFile(asset.file), {
+        headers: { "content-type": asset.contentType },
+      });
+    } catch {
+      return new Response("Not found", { status: 404 });
+    }
+  });
 
   // Permissions this app grants to its own renderer (deny everything else —
   // it's our app talking to our own vault, no third-party surface):

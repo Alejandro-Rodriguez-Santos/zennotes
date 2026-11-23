@@ -135,6 +135,14 @@ export const HELP_QUICK_START: HelpCard<HelpText>[] = [
       'Images, SVGs, PDFs, audio, video, Excalidraw drawings, and other local files can appear in the vault tree and open in ZenNotes tabs or reference panes. The files stay ordinary vault files, but opening them does not have to bounce you out to another app.'
   },
   {
+    title: 'Read PDFs and find PDF files',
+    body: [
+      'Search files (Space f in Vim mode, or the usual note-search shortcut) now includes PDF names and paths from the vault. Press Enter on a PDF to open it in a tab. Tag queries still filter notes. PDFs in Trash are excluded.',
+      ' PDF tabs and the reference pane use PDF.js with bundled offline resources. Use the toolbar for page navigation, zoom, fit width and rotation. Ctrl/Cmd+F searches inside the focused PDF; Enter and Shift+Enter move between matches, and Escape returns to the reader. Ctrl/Cmd +/− changes PDF zoom. With Vim mode on, h/j/k/l scroll and gg/G go to the start/end; leader and pane commands remain available. Copy link still copies the current page and location.',
+      ' Hiding a PDF reference releases its renderer and remembers its reading position. Showing it resumes reading; following a page link explicitly jumps to that destination again. PDFs embedded inside Markdown previews still use the existing native viewer. Links to selected text/figures and searching PDF contents from Search text are planned separately.'
+    ]
+  },
+  {
     title: 'Link to a page in a PDF',
     body: [
       'A link to a PDF can name a spot in it: `[Paper, p. 3](assets/paper.pdf#page=3&zoom=150)`. Clicking the link opens the PDF in its tab at that page and zoom, and `gd` pins it in the reference pane at the same spot. Follow the link again after reading on and the PDF returns to the spot.',

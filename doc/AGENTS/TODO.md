@@ -12,10 +12,12 @@
 - [x] Concretar el contrato de enlaces de texto/región y los tipos de resultado PDF, con ejemplos y criterios de aceptación. [Contratos v1](../Diseno/contratos-pdf.md).
 - [x] Comprobar herramientas/entorno, instalar dependencias del repo y registrar una línea base de las comprobaciones pertinentes. [Resultados y límites](../SeguimientoAgente/2026-11-23-incremento-1-contratos-y-base.md).
 
-## Fase 1 — visor integrado
+## Incremento 2 / Fase 1 — visor integrado y búsqueda de archivos
 
-- [ ] Integrar PDF.js con recursos offline y un visor compartido para pestañas y referencias; comprobar apertura, búsqueda interna, selección, navegación, zoom y cierre sin fugas.
-- [ ] Conservar enlaces a página/zoom/posición y coordinar foco/atajos; comprobar con pruebas y un recorrido manual en un vault temporal.
+- [x] Integrar PDF.js offline compartido en pestañas y referencias; comprobar apertura, capa textual, búsqueda, navegación, zoom y limpieza de workers. [Incremento 2](../SeguimientoAgente/2026-11-23-incremento-2-visor-pdfjs.md).
+- [x] Conservar enlaces a página/zoom/posición y coordinar foco/atajos; comprobado con pruebas y recorrido real automatizado en vault temporal. [Evidencia](../SeguimientoAgente/2026-11-23-incremento-2-visor-pdfjs.md).
+- [x] Incluir PDF en `Space f` por nombre/ruta, abrir con Enter en el visor integrado y conservar notas/tags y exclusión de papelera. Encargo añadido el 23/11/2026; [pruebas](../SeguimientoAgente/2026-11-23-incremento-2-visor-pdfjs.md).
+- [ ] Migrar embeds de Preview/Live Preview al visor común en un incremento posterior; mientras tanto conservar el comportamiento nativo explícitamente.
 
 ## Fase 2 — recorrido completo de búsqueda y cita
 
@@ -33,9 +35,9 @@
 - [ ] Previsualizaciones y recortes de figuras con persistencia definida.
 - [ ] Atajos configurables y movimientos Vim para los flujos nuevos, sin conflictos con edición y búsqueda.
 
-## Cierre de cada entrega funcional
+## Cierre del incremento 2
 
-- [ ] Ejecutar las verificaciones exigidas para el alcance; registrar resultados reales y límites.
-- [ ] Actualizar ayuda/documentación pertinente y seguimiento; revisar diff, compatibilidad y tareas restantes.
+- [x] Ejecutar las verificaciones pertinentes y registrar resultados reales y límites en su seguimiento.
+- [x] Actualizar ayuda, instrucciones y seguimiento; revisar diff y tareas restantes.
 
 Fuera de la primera entrega: Trazo, incrustación de ventanas Qt, plataforma general de plugins, edición del PDF original, OCR automático y paridad completa con PDF++.

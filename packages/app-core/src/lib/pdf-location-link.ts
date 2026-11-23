@@ -1,5 +1,6 @@
 import type { PdfFlashTarget, PdfViewLocation } from '@zennotes/bridge-contract/bridge'
 import { useToastStore } from './toast'
+import { readRegisteredPdfLocation } from './pdf-viewer-registry'
 
 /**
  * "Copy link to PDF location" (#1085): a Markdown link to the vault PDF at
@@ -52,17 +53,17 @@ export function pdfLocationMarkdownLink(
 /** The PDF frame a command means: the one holding focus, else the first one
  *  on screen inside the active pane, else the first one on screen anywhere
  *  (the reference pane). */
-export function pdfFrameForCommand(doc: Document = document): HTMLIFrameElement | null {
-  const active = doc.activeElement
-  if (active instanceof HTMLIFrameElement && active.hasAttribute(PDF_FRAME_ATTR)) return active
+export function pdfFrameForCommand(doc: Document = document): HTMLElement | null {
+  const active = doc.activeElement?.closest<HTMLElement>(`[${PDF_FRAME_ATTR}]`)
+  if (active && active.getClientRects().length > 0) return active
   const visible = Array.from(
-    doc.querySelectorAll<HTMLIFrameElement>(`iframe[${PDF_FRAME_ATTR}]`)
+    doc.querySelectorAll<HTMLElement>(`[${PDF_FRAME_ATTR}]`)
   ).filter((frame) => frame.getClientRects().length > 0)
   const inActivePane = visible.find((frame) => frame.closest('[data-active-pane="true"]'))
   return inActivePane ?? visible[0] ?? null
 }
 
-export async function copyPdfLocationLink(frame: HTMLIFrameElement | null): Promise<boolean> {
+export async function copyPdfLocationLink(frame: HTMLElement | null): Promise<boolean> {
   const toast = useToastStore.getState().addToast
   const assetPath = frame?.getAttribute(PDF_FRAME_ATTR)
   if (!frame || !assetPath) {
@@ -71,7 +72,12 @@ export async function copyPdfLocationLink(frame: HTMLIFrameElement | null): Prom
   }
   let location: PdfViewLocation | null = null
   try {
-    location = (await window.zen.readPdfViewLocation?.(frame.name)) ?? null
+    const registered = readRegisteredPdfLocation(frame)
+    location = registered !== undefined
+      ? registered
+      : frame instanceof HTMLIFrameElement
+        ? (await window.zen.readPdfViewLocation?.(frame.name)) ?? null
+        : null
   } catch {
     location = null
   }

@@ -4,9 +4,9 @@
 
 Este fork pretende incorporar PDF.js dentro de ZenNotes y añadir herramientas de estudio inspiradas en PDF++: enlaces a selecciones de texto y figuras, citas Markdown, atajos y navegación entre documentos y notas. La búsqueda de texto debe incluir el contenido de los PDF mediante `rga` o una alternativa justificada, tanto en la interfaz como en MCP `search_text`.
 
-Fuente de requisitos: conversación con el usuario del 23/11/2026. El usuario descartó la integración de Trazo como dirección del proyecto y prefirió PDF.js. La preparación del fork quedó completada. El encargo posterior autoriza el primer incremento de inventario, contratos y línea base, con subagentes Sol en esfuerzo bajo. **Este incremento no integra todavía PDF.js ni rga en el producto.** Al retomar, atender al nuevo encargo del usuario sin reconfirmar trabajo ya autorizado.
+Fuente de requisitos: conversación con el usuario del 23/11/2026. El usuario descartó la integración de Trazo como dirección del proyecto y prefirió PDF.js. La preparación del fork quedó completada. El primer incremento de inventario, contratos y línea base quedó completado. El encargo siguiente autoriza integrar PDF.js en pestañas y referencias, con subagentes Sol en esfuerzo bajo. El usuario añadió expresamente que `Space f` incluya y abra archivos PDF por nombre/ruta. La búsqueda de contenido con rga y los enlaces avanzados a selecciones/figuras siguen en la fase posterior. Al retomar, atender al nuevo encargo del usuario sin reconfirmar trabajo ya autorizado.
 
-Resultados vigentes: [inventario PDF y búsquedas](../Diseno/inventario-pdf.md), [contratos v1](../Diseno/contratos-pdf.md) y [evidencia del primer incremento](../SeguimientoAgente/2026-11-23-incremento-1-contratos-y-base.md).
+Resultados vigentes: [inventario PDF y búsquedas](../Diseno/inventario-pdf.md), [contratos v1](../Diseno/contratos-pdf.md) y [evidencia del primer incremento](../SeguimientoAgente/2026-11-23-incremento-1-contratos-y-base.md). El visor y la búsqueda de archivos se describen en el [incremento 2](../SeguimientoAgente/2026-11-23-incremento-2-visor-pdfjs.md).
 
 Consulta [TODO](TODO.md) y la [nota inicial](../SeguimientoAgente/2026-11-23-preparacion-pdfjs.md).
 
@@ -33,11 +33,12 @@ Lee [CONTRIBUTING.md](../../CONTRIBUTING.md), [arquitectura](../../docs/monorepo
 
 Primera entrega propuesta: escritorio Linux con vault local. Preservar compilación y comportamiento de otros runtimes; ampliar búsqueda remota, servidor y móvil queda para un alcance posterior. El alcance final se contrasta con el siguiente encargo.
 
-## Requisitos y decisiones por validar
+## Requisitos y decisiones vigentes
 
 ### Visor y navegación
 
-- Incorporar PDF.js en pestañas y panel de referencia; reutilizar un componente/servicio común para evitar dos implementaciones divergentes.
+- Incorporar PDF.js en pestañas y panel de referencia; reutilizar un componente/servicio común para evitar dos implementaciones divergentes. Preview y Live Preview conservan temporalmente sus embeds nativos; sus acciones de abrir pestaña/referencia sí llegan al componente PDF.js.
+- La búsqueda de archivos `Space f` incluye PDF por nombre/ruta desde el índice de assets, respeta las consultas de etiquetas de notas y excluye la papelera configurada. No confundirla con Search text ni MCP.
 - Conservar apertura de archivos y enlaces existentes a página, zoom y posición. Inventariar también los embeds en notas antes de decidir su migración.
 - Empaquetar worker, fuentes y recursos para funcionamiento local/offline; no depender de CDN.
 - Coordinar foco y atajos con el editor y la paleta de ZenNotes. No interceptar escritura o teclas globales indiscriminadamente.

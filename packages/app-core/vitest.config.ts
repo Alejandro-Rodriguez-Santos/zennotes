@@ -1,3 +1,4 @@
+import { pdfjsAssets } from '@zennotes/app-core/vite'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -26,7 +27,7 @@ function onigurumaDataUrl(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [onigurumaDataUrl(), harperWasmAsset()],
+  plugins: [pdfjsAssets(), onigurumaDataUrl(), harperWasmAsset()],
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, '../shared-domain/src'),

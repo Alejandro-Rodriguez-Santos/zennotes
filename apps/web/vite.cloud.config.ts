@@ -1,3 +1,4 @@
+import { pdfjsAssets } from '@zennotes/app-core/vite'
 /**
  * ZenNotes in your browser (app.zennotes.org): the second build of apps/web,
  * from src/cloud/ into dist-cloud/. It shares the self-hosted build's plugins
@@ -244,7 +245,7 @@ export default defineConfig({
     host: '127.0.0.1',
     headers: CLOUD_DOCUMENT_HEADERS
   },
-  plugins: [onigurumaDataUrl(), harperWasmAsset(), react(), excalidrawFonts(OUT_DIR), cloudHost()],
+  plugins: [pdfjsAssets(), onigurumaDataUrl(), harperWasmAsset(), react(), excalidrawFonts(OUT_DIR), cloudHost()],
   optimizeDeps: {
     exclude: sharedOptimizeDepsExclude
   },

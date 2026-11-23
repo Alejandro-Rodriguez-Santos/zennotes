@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
-import type { NoteMeta } from '@shared/ipc'
+import type { AssetMeta, NoteMeta } from '@shared/ipc'
 import { isPaletteNextKey, isPalettePreviousKey } from '../lib/palette-nav'
 import { isImeComposing } from '../lib/ime'
 import {
@@ -25,10 +25,15 @@ import { isPrimaryNotesAtRoot, noteFolderLabel } from '../lib/vault-layout'
 import { isPathInTemplateFolder, resolveTemplateFolder } from '@shared/template-folder'
 import { useToastStore } from '../lib/toast'
 import { openTaggedBlock, useTagBlockIndex } from '../lib/tag-block-index'
-import { buildSearchPaletteRows, type SearchPaletteRow } from '../lib/search-palette-rows'
+import { buildSearchPaletteRows, type SearchPaletteRow as NoteSearchRow } from '../lib/search-palette-rows'
+import { openAssetInTab } from '../lib/asset-tab-location'
+import { rankItems } from '../lib/fuzzy-score'
+import { resolveFolderPath } from '@shared/system-folder-paths'
 import { Modal } from './ui/Modal'
 import { SearchCreateForm, type SearchCreateTarget } from './SearchCreateForm'
 import { TaggedBlockText } from './TaggedBlockText'
+
+type SearchPaletteRow = NoteSearchRow | { kind: 'pdf'; key: string; asset: AssetMeta }
 
 const NO_NOTES: NoteMeta[] = []
 const RESULT_LIMIT = 20
@@ -36,6 +41,7 @@ const RESULT_LIMIT = 20
 const CREATE_ROW_KEY = '\0create'
 
 export function SearchPalette(): JSX.Element {
+  const assetFiles = useStore((s) => s.assetFiles)
   const notes = useStore((s) => s.notes)
   const setSearchOpen = useStore((s) => s.setSearchOpen)
   const selectNote = useStore((s) => s.selectNote)
@@ -90,7 +96,7 @@ export function SearchPalette(): JSX.Element {
     )
   }, [showBlocks, notes, tagTokens, templateFolder])
   const tagBlocks = useTagBlockIndex(showBlocks ? (freeText ? taggedNotes : results) : NO_NOTES)
-  const rows = useMemo(
+  const noteRows = useMemo(
     () =>
       buildSearchPaletteRows({
         results,
@@ -104,12 +110,32 @@ export function SearchPalette(): JSX.Element {
     [results, taggedNotes, tagBlocks.blocksByPath, tagTokens, freeText, searchTaggedBlocks]
   )
 
+  const pdfs = useMemo(() => tagTokens.length ? [] : rankItems(
+    assetFiles.filter((asset) => {
+      const trash = resolveFolderPath('trash', vaultSettings?.systemFolderPaths)
+      return /\.pdf$/i.test(asset.path) && !asset.path.startsWith(`${trash}/`)
+    }), freeText,
+    [{ get: (asset) => asset.name, weight: 1 }, { get: (asset) => asset.path, weight: 0.8 }]
+  ).slice(0, RESULT_LIMIT), [assetFiles, freeText, tagTokens, vaultSettings])
+  const rows = useMemo<SearchPaletteRow[]>(() => {
+    if (!pdfs.length) return noteRows
+    const pdfRows = pdfs.map((asset): SearchPaletteRow => ({ kind: 'pdf', key: asset.path, asset }))
+    // Preserve the recent-note experience for an empty query. For a file name,
+    // rank both kinds together so an incidental PDF cannot hide an exact note.
+    if (!freeText.trim()) return [...noteRows, ...pdfRows].slice(0, RESULT_LIMIT)
+    return rankItems([...noteRows, ...pdfRows], freeText, [
+      { get: row => row.kind === 'pdf' ? row.asset.name : row.note.title, weight: 1 },
+      { get: row => row.kind === 'pdf' ? row.asset.path : row.note.path, weight: 0.8 },
+      { get: row => row.kind === 'pdf' ? '' : row.note.excerpt, weight: 0.3 }
+    ]).slice(0, RESULT_LIMIT)
+  }, [pdfs, noteRows, freeText])
+
   // A search that finds nothing is often the moment the note should start
   // existing (#826). The free text drafts the note to create (its `#tags`
   // become the note's tags); the create row sits after the result rows, at
   // index rows.length, and leads to a form where the name, folder and tags can
   // still change, so it shows even when the name is taken or not yet valid.
-  const createRow = useMemo(() => searchCreateDraft(freeText, tagTokens), [freeText, tagTokens])
+  const createRow = useMemo(() => pdfs.some((asset) => [asset.name, asset.path].some((value) => value.toLowerCase() === freeText.trim().toLowerCase())) ? null : searchCreateDraft(freeText, tagTokens), [freeText, tagTokens, pdfs])
   const rowKeys = useMemo(
     () => [...rows.map((row) => row.key), ...(createRow ? [CREATE_ROW_KEY] : [])],
     [rows, createRow]
@@ -161,6 +187,17 @@ export function SearchPalette(): JSX.Element {
   // jump (Ctrl+O comes back); "+N more" opens the rest in the Tags view with
   // the free text still filtering.
   const openRow = async (row: SearchPaletteRow): Promise<void> => {
+    if (row.kind === 'pdf') {
+      setSearchOpen(false)
+      await openAssetInTab(row.asset.path)
+      requestAnimationFrame(() => {
+        const readers = Array.from(document.querySelectorAll<HTMLElement>('[data-zen-pdf-path]'))
+          .filter(el => el.dataset.zenPdfPath === row.asset.path)
+        const active = readers.find(el => el.closest('[data-active-pane="true"]'))
+        ;(active ?? readers[0])?.focus({ preventScroll: true })
+      })
+      return
+    }
     if (row.kind === 'note') return open(row.note)
     setSearchOpen(false)
     if (row.kind === 'block') {
@@ -223,7 +260,8 @@ export function SearchPalette(): JSX.Element {
           <input
             ref={inputRef}
             value={query}
-            placeholder="Search notes…  ·  use #tag to filter"
+            aria-label="Search files"
+            placeholder="Search files…  ·  use #tag for notes"
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
               // While composing (IME), let the input own Enter/Arrows. (#183)
@@ -285,6 +323,15 @@ export function SearchPalette(): JSX.Element {
           ) : (
             rows.map((row, i) => {
               const isActive = i === active
+              if (row.kind === 'pdf') return (
+                <button key={row.key} data-search-idx={i} data-search-pdf={row.asset.path}
+                  onClick={() => void openRow(row)} onMouseMove={() => setActive(i)}
+                  className={`flex w-full items-center gap-3 px-4 py-2 text-left ${isActive ? 'bg-paper-200' : 'hover:bg-paper-200/70'}`}>
+                  <span className="truncate text-sm font-medium">{row.asset.name}</span>
+                  <span className="min-w-0 flex-1 truncate text-xs text-ink-400">{row.asset.path}</span>
+                  <span className="text-xs text-ink-400">PDF</span>
+                </button>
+              )
               if (row.kind === 'block') {
                 return (
                   <button

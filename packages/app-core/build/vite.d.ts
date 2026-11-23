@@ -9,3 +9,6 @@ export interface ZenNotesAssetsOptions {
 
 /** Build integrations for the shared editor's lazy assets. */
 export function zenNotesAssets(options?: ZenNotesAssetsOptions): Plugin[]
+
+/** Emit and serve offline PDF.js resources. */
+export function pdfjsAssets(): Plugin

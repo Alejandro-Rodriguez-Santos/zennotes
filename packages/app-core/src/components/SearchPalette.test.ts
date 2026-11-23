@@ -10,6 +10,9 @@ import { SearchPalette } from './SearchPalette'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
+const openAssetInTab = vi.hoisted(() => vi.fn(async () => {}))
+vi.mock('../lib/asset-tab-location', () => ({ openAssetInTab }))
+
 const confirmApp = vi.hoisted(() => vi.fn(async () => true))
 vi.mock('../lib/confirm-requests', () => ({ confirmApp }))
 // Closing the palette hands focus back to the editor with a few timed retries;
@@ -94,8 +97,54 @@ describe('SearchPalette: Ctrl+D moves the highlighted note to Trash', () => {
     useStore.setState(originalState, true)
   })
 
+  it.each(['Manual.pdf', 'references/Manual.pdf'])('opens a PDF matched by %s with Enter without drafting a note', async (query) => {
+    useStore.setState({ assetFiles: [
+      { path: 'references/Manual.pdf', name: 'Manual.pdf', kind: 'pdf', siblingOrder: 0, size: 1, updatedAt: 0 }
+    ] })
+    act(() => root.render(createElement(SearchPalette)))
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+      setter.call(input(), query)
+      input().dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    expect(document.querySelector('[data-search-pdf]')?.textContent).toContain('Manual.pdf')
+    expect(document.querySelector('[data-search-create]')).toBeNull()
+    await act(async () => {
+      input().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    })
+    expect(openAssetInTab).toHaveBeenCalledWith('references/Manual.pdf')
+  })
+
+  it('keeps recent notes first on empty search and ranks exact notes above incidental PDFs', () => {
+    useStore.setState({ assetFiles: [
+      { path: 'references/Alpha manual.pdf', name: 'Alpha manual.pdf', kind: 'pdf', siblingOrder: 0, size: 1, updatedAt: 0 }
+    ] })
+    act(() => root.render(createElement(SearchPalette)))
+    expect(document.querySelector('[data-search-idx="0"]')?.hasAttribute('data-search-pdf')).toBe(false)
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input(), 'Alpha')
+      input().dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    expect(document.querySelector('[data-search-idx="0"]')?.textContent).toContain('Alpha')
+    expect(document.querySelector('[data-search-idx="0"]')?.hasAttribute('data-search-pdf')).toBe(false)
+    expect(document.querySelector('[data-search-pdf]')).not.toBeNull()
+  })
+
+  it('leaves PDFs in the configured trash out of file search', () => {
+    useStore.setState({
+      vaultSettings: { ...useStore.getState().vaultSettings, systemFolderPaths: { trash: 'Deleted' } } as never,
+      assetFiles: [{ path: 'Deleted/Manual.pdf', name: 'Manual.pdf', kind: 'pdf', siblingOrder: 0, size: 1, updatedAt: 0 }]
+    })
+    act(() => root.render(createElement(SearchPalette)))
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input(), 'Manual.pdf')
+      input().dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    expect(document.querySelector('[data-search-pdf]')).toBeNull()
+  })
+
   const input = (): HTMLInputElement => {
-    const el = document.querySelector<HTMLInputElement>('input[placeholder^="Search notes"]')
+    const el = document.querySelector<HTMLInputElement>('input[aria-label="Search files"]')
     if (!el) throw new Error('search input not rendered')
     return el
   }
@@ -223,7 +272,7 @@ describe('SearchPalette: the create row opens a New note form', () => {
   })
 
   const search = (): HTMLInputElement => {
-    const el = document.querySelector<HTMLInputElement>('input[placeholder^="Search notes"]')
+    const el = document.querySelector<HTMLInputElement>('input[aria-label="Search files"]')
     if (!el) throw new Error('search input not rendered')
     return el
   }

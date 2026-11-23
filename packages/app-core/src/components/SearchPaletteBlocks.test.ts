@@ -103,7 +103,7 @@ describe('SearchPalette: tagged blocks under a #tag query', () => {
   })
 
   const input = (): HTMLInputElement =>
-    document.querySelector<HTMLInputElement>('input[placeholder^="Search notes"]')!
+    document.querySelector<HTMLInputElement>('input[aria-label="Search files"]')!
   const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
   const type = (text: string): void => {
     act(() => {

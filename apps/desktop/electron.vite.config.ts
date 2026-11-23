@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
-import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
+import { defineConfig, externalizeDepsPlugin, type ElectronViteConfig } from 'electron-vite'
 import type { Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { harperWasmAsset } from '../../tooling/vite/harper-wasm-asset'
@@ -252,7 +252,9 @@ function isDeferredRendererPreload(dep: string): boolean {
   )
 }
 
-export default defineConfig({
+export default defineConfig(async (): Promise<ElectronViteConfig> => {
+  const { pdfjsAssets } = await import('@zennotes/app-core/vite')
+  return {
   main: {
     plugins: [externalizeDepsPlugin({ exclude: MAIN_EXTERNALIZE_EXCLUSIONS })],
     build: {
@@ -336,10 +338,12 @@ export default defineConfig({
       }
     },
     plugins: [
+      pdfjsAssets(),
       onigurumaDataUrl(),
       harperWasmAsset(),
       excalidrawLocalFontFallback(EXCALIDRAW_ASSET_PATH),
       react()
     ]
+  }
   }
 })

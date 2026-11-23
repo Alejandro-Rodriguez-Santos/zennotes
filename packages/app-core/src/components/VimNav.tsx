@@ -523,7 +523,7 @@ export function VimNav(): JSX.Element | null {
           ]
         : [])
     ]
-    if (typeof window.zen.readPdfViewLocation === 'function' && pdfFrameForCommand()) {
+    if (pdfFrameForCommand()) {
       items.push({
         keyLabel: getKeymapDisplay(keymapOverrides, 'vim.leaderCopyPdfLink'),
         label: 'Copy PDF link',
@@ -615,6 +615,11 @@ export function VimNav(): JSX.Element | null {
       // The selection format toolbar handles its own keyboard navigation
       // (arrows / Enter / Esc) once focused — yield to it entirely.
       if (target?.closest('[data-selection-toolbar]')) return
+      // PDF.js is in our DOM rather than an isolated Chromium frame. Let its
+      // reader own scrolling/find, while retaining leader and pane chords.
+      if (target?.closest('.zen-pdf') && !ctrlWPending.current && !leaderPending.current &&
+          sequenceTokenFromEvent(e) !== panePrefixToken &&
+          (target.closest('button') || sequenceTokenFromEvent(e) !== leaderToken)) return
       // The home view owns its own roving-focus navigation (↑/↓/j/k/Enter), but
       // it does not handle the leader key — so the leader (and any pending leader
       // sequence) must fall through to VimNav, or Space-as-leader is swallowed
@@ -1779,6 +1784,7 @@ export function VimNav(): JSX.Element | null {
         (target.tagName === 'INPUT' ||
           target.tagName === 'TEXTAREA' ||
           target.isContentEditable ||
+          target.closest('.zen-pdf') ||
           target.closest(SELF_KEYED_SURFACES) ||
           target.closest(
             `${EXCALIDRAW_SURFACE}, [data-calendar-panel], [data-timeline-panel], [data-selection-toolbar]`

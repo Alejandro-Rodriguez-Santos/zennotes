@@ -64,11 +64,10 @@ import { hashtagSource } from '../lib/cm-hashtag-complete'
 import { frontmatterTagSource } from '../lib/cm-frontmatter-tag-complete'
 import { completionKeymapExtension, completionNavKeymap } from '../lib/cm-completion-nav'
 import { classifyLocalAssetHref, hrefFragment, type LocalAssetKind } from '../lib/local-assets'
-import { canShowPdfInline } from '../lib/pdf-inline'
 import { LazyPreview as Preview } from './LazyPreview'
-import { PdfOpenElsewhere } from './PdfOpenElsewhere'
+import { PdfViewer } from './PdfViewer'
 import { CloseIcon, LinkIcon, PanelLeftIcon, PinIcon } from './icons'
-import { copyPdfLocationLink, flashPdfFrameOnce, nextPdfFrameName, PDF_FRAME_ATTR, pdfFrameForCommand } from '../lib/pdf-location-link'
+import { copyPdfLocationLink, PDF_FRAME_ATTR, pdfFrameForCommand } from '../lib/pdf-location-link'
 import { useAssetTabLocations } from '../lib/asset-tab-location'
 import { editorTabSize } from '../lib/editor-tab-size'
 import { appMarkdownSnippetExtension } from '../lib/markdown-snippets-config'
@@ -467,37 +466,14 @@ export function PinnedReferencePane(): JSX.Element | null {
   const assetUrlWithFragment = assetUrl ? assetUrl + (pinnedRefFragment ?? '') : null
   const assetKind: LocalAssetKind | null =
     pinnedRefPath && isAsset ? classifyLocalAssetHref(pinnedRefPath) ?? 'file' : null
-  const pdfElsewhere = assetKind === 'pdf' && !canShowPdfInline()
-  const useAssetIframe = (assetKind === 'pdf' && !pdfElsewhere) || assetKind === 'file'
-  // Each cached frame keeps one name for its life, so main can find the one
-  // on screen when its location is copied (#1085).
-  const frameNamesRef = useRef(new Map<string, string>())
-  const frameNameFor = (url: string): string => {
-    let name = frameNamesRef.current.get(url)
-    if (!name) {
-      name = nextPdfFrameName()
-      frameNamesRef.current.set(url, name)
-    }
-    return name
-  }
-  const canCopyPdfLink =
-    assetKind === 'pdf' && !pdfElsewhere && typeof window.zen.readPdfViewLocation === 'function'
-  // A followed link remounts its frame at the link's spot (pinPdfReferenceAt)
-  // and marks that spot once.
+  // Generic files retain their native frames. PDFs keep only lightweight view
+  // state when inactive; unmounting releases PDF.js documents and workers.
+  const useAssetIframe = assetKind === 'file'
+  const canCopyPdfLink = assetKind === 'pdf'
   const referenceJumps = useAssetTabLocations((s) => s.referenceJumps)
   const jumpNonce = assetUrlWithFragment ? referenceJumps[assetUrlWithFragment] ?? 0 : 0
-  useEffect(() => {
-    if (!jumpNonce || !assetUrlWithFragment || assetKind !== 'pdf' || pdfElsewhere) return
-    flashPdfFrameOnce(`ref:${jumpNonce}`, frameNameFor(assetUrlWithFragment), pinnedRefFragment)
-    // frameNameFor is stable per URL, so the nonce alone marks a new jump.
-  }, [jumpNonce, assetUrlWithFragment, assetKind, pdfElsewhere, pinnedRefFragment])
 
-  // Track every asset URL the user has pinned this session. One iframe
-  // per unique URL stays mounted for the life of the app — show/hide
-  // via CSS rather than unmounting — so switching between references
-  // (or unpinning and re-pinning) preserves each PDF viewer's page,
-  // scroll, and zoom. 16-entry LRU cap keeps memory bounded if the
-  // user cycles through many PDFs.
+  // Cache only generic native frames. PDFs use the shared viewer below.
   const [seenAssetUrls, setSeenAssetUrls] = useState<string[]>([])
   useEffect(() => {
     if (!assetUrlWithFragment || !useAssetIframe) return
@@ -588,8 +564,8 @@ export function PinnedReferencePane(): JSX.Element | null {
                   aria-label="Copy link to PDF location"
                   onClick={(event) => {
                     const section = event.currentTarget.closest('section')
-                    const frame = section?.querySelector<HTMLIFrameElement>(
-                      `iframe[${PDF_FRAME_ATTR}]`
+                    const frame = section?.querySelector<HTMLElement>(
+                      `[${PDF_FRAME_ATTR}]`
                     )
                     void copyPdfLocationLink(frame ?? pdfFrameForCommand())
                   }}
@@ -672,15 +648,20 @@ export function PinnedReferencePane(): JSX.Element | null {
           </div>
         )}
 
-        {pinnedRefPath && isAsset && assetUrl && pdfElsewhere && (
-          <PdfOpenElsewhere assetPath={pinnedRefPath} title={title} />
+        {!hidden && pinnedRefPath && isAsset && assetUrl && assetKind === 'pdf' && (
+          <PdfViewer
+            key={assetUrl}
+            url={assetUrl}
+            assetPath={pinnedRefPath}
+            title={title}
+            fragment={pinnedRefFragment}
+            jumpKey={jumpNonce}
+            stateKey={`${vaultRoot}:reference:${pinnedRefPath}`}
+            className="min-h-0 flex-1"
+          />
         )}
 
-        {/* Asset iframe stack — ALWAYS mounted once any PDF/generic asset has been
-            pinned this session, regardless of whether one is currently
-            pinned or the pane is visible. This is the "preserve PDF
-            page" mechanism: hiding via CSS keeps the iframe alive so
-            Chromium's internal PDF viewer retains its state. */}
+        {/* Generic files still use native frames; PDF resources are not cached here. */}
         {seenAssetUrls.length > 0 && (
           <div
             className="absolute inset-0"
@@ -692,10 +673,6 @@ export function PinnedReferencePane(): JSX.Element | null {
               <iframe
                 key={`${url}|${referenceJumps[url] ?? 0}`}
                 src={url}
-                name={frameNameFor(url)}
-                {...(url === assetUrlWithFragment && assetKind === 'pdf' && pinnedRefPath
-                  ? { [PDF_FRAME_ATTR]: pinnedRefPath }
-                  : {})}
                 title={url}
                 className="absolute inset-0 h-full w-full border-0 bg-paper-50"
                 style={{

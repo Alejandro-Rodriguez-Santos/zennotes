@@ -395,15 +395,14 @@ import {
   isAssetTabPath
 } from '../lib/asset-tabs'
 import { useAssetTabLocations } from '../lib/asset-tab-location'
-import { copyPdfLocationLink, flashPdfFrameOnce, nextPdfFrameName, PDF_FRAME_ATTR } from '../lib/pdf-location-link'
+import { copyPdfLocationLink, PDF_FRAME_ATTR } from '../lib/pdf-location-link'
 import {
   diagramFromTabPath,
   diagramTitleFromTabPath,
   isDiagramTabPath
 } from '../lib/diagram-tabs'
 import { classifyLocalAssetHref } from '../lib/local-assets'
-import { canShowPdfInline } from '../lib/pdf-inline'
-import { PdfOpenElsewhere } from './PdfOpenElsewhere'
+import { PdfViewer } from './PdfViewer'
 import {
   formatKeyToken,
   getKeymapBinding,
@@ -5256,20 +5255,10 @@ function AssetTabView({
   const assetUrl =
     assetPath && vaultRoot ? window.zen.resolveVaultAssetUrl(vaultRoot, assetPath) : null
   const assetKind = assetPath ? classifyLocalAssetHref(assetPath) ?? 'file' : 'file'
-  // The page a followed link named (#1085). A new nonce remounts the frame, so
-  // following the same link again returns to that spot.
+  // An explicit follow gets a fresh nonce even when its fragment is unchanged.
   const location = useAssetTabLocations((s) => s.byTab[tabPath] ?? null)
-  const [pdfFrameName] = useState(nextPdfFrameName)
-  const pdfFrameRef = useRef<HTMLIFrameElement | null>(null)
-  const showsPdf = assetKind === 'pdf' && !!assetPath && !!assetUrl && canShowPdfInline()
-  const canCopyPdfLink = showsPdf && typeof window.zen.readPdfViewLocation === 'function'
-  // Mark the spot a followed link landed on, once per follow (#1085).
-  const locationNonce = location?.nonce ?? 0
-  const locationFragment = location?.fragment ?? null
-  useEffect(() => {
-    if (!showsPdf || !locationNonce) return
-    flashPdfFrameOnce(`tab:${tabPath}:${locationNonce}`, pdfFrameName, locationFragment)
-  }, [showsPdf, locationNonce, locationFragment, tabPath, pdfFrameName])
+  const assetViewRef = useRef<HTMLDivElement | null>(null)
+  const canCopyPdfLink = assetKind === 'pdf' && !!assetPath && !!assetUrl
   const canReveal =
     !!assetPath &&
     window.zen.getAppInfo().runtime === 'desktop' &&
@@ -5298,22 +5287,21 @@ function AssetTabView({
         <audio src={assetUrl} controls className="w-full" />
       </div>
     </div>
-  ) : assetKind === 'pdf' && !canShowPdfInline() ? (
-    <PdfOpenElsewhere assetPath={assetPath} title={title} />
-  ) : (
-    <iframe
-      key={assetKind === 'pdf' && location ? location.nonce : 0}
-      ref={pdfFrameRef}
-      src={assetKind === 'pdf' && location ? assetUrl + location.fragment : assetUrl}
-      name={showsPdf ? pdfFrameName : undefined}
-      {...(showsPdf ? { [PDF_FRAME_ATTR]: assetPath } : {})}
+  ) : assetKind === 'pdf' ? (
+    <PdfViewer
+      url={assetUrl}
+      assetPath={assetPath}
       title={title}
-      className="min-h-0 min-w-0 flex-1 border-0 bg-paper-50"
+      fragment={location?.fragment}
+      jumpKey={location?.nonce}
+      className="min-h-0 flex-1"
     />
+  ) : (
+    <iframe src={assetUrl} title={title} className="min-h-0 min-w-0 flex-1 border-0 bg-paper-50" />
   )
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div ref={assetViewRef} className="flex min-h-0 min-w-0 flex-1 flex-col">
       <header className="glass-header flex h-12 shrink-0 items-center justify-between gap-3 border-b border-paper-300/70 px-4">
         <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-ink-900">
           <DocumentIcon width={15} height={15} className="shrink-0 text-accent" />
@@ -5325,7 +5313,9 @@ function AssetTabView({
               type="button"
               title="Copy a Markdown link to the page you're on"
               className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-ink-500 hover:bg-paper-200 hover:text-ink-900"
-              onClick={() => void copyPdfLocationLink(pdfFrameRef.current)}
+              onClick={() => void copyPdfLocationLink(
+                assetViewRef.current?.querySelector<HTMLElement>(`[${PDF_FRAME_ATTR}]`) ?? null
+              )}
             >
               <LinkIcon width={13} height={13} />
               Copy link

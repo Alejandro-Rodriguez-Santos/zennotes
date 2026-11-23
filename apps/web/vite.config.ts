@@ -1,3 +1,4 @@
+import { pdfjsAssets } from '@zennotes/app-core/vite'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { harperWasmAsset } from '../../tooling/vite/harper-wasm-asset'
@@ -100,7 +101,7 @@ export default defineConfig({
       }
     }
   },
-  plugins: [onigurumaDataUrl(), harperWasmAsset(), react(), excalidrawFonts()],
+  plugins: [pdfjsAssets(), onigurumaDataUrl(), harperWasmAsset(), react(), excalidrawFonts()],
   // Typst ships a WASM compiler loaded lazily via `?url` + dynamic import; keep
   // it out of the esbuild dep pre-bundler so the wasm glue stays intact. The
   // same goes for Harper, whose worker is an inline blob the pre-bundler

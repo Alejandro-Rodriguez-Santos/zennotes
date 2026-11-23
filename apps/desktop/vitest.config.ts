@@ -1,7 +1,10 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
 
-export default defineConfig({
+export default defineConfig(async () => {
+  const { pdfjsAssets } = await import('@zennotes/app-core/vite')
+  return {
+  plugins: [pdfjsAssets()],
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, '../../packages/shared-domain/src'),
@@ -12,5 +15,6 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts']
+  }
   }
 })

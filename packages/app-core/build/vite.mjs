@@ -28,11 +28,11 @@ export function zenNotesAssets(options = {}) {
       return `export default ${JSON.stringify(`data:application/wasm;base64,${bytes.toString('base64')}`)}`
     }
   }
-  if (options.excalidraw === false) return [assets]
+  if (options.excalidraw === false) return [assets, pdfjsAssets()]
 
   const fonts = join(dirname(require.resolve('@excalidraw/excalidraw')), 'fonts')
   let base = '/'
-  return [assets, {
+  return [assets, pdfjsAssets(), {
     name: 'zennotes-core-drawing-fonts',
     configResolved(config) { base = config.base },
     configureServer(server) {
@@ -64,4 +64,44 @@ export function zenNotesAssets(options = {}) {
       walk(fonts)
     }
   }]
+}
+
+/** Offline PDF.js data, shared by all renderer hosts. */
+export function pdfjsAssets() {
+  const root = dirname(require.resolve('pdfjs-dist/package.json'))
+  const virtual = '\0zennotes:pdfjs-assets'
+  let base = '/'
+  let building = false
+  const files = []
+  for (const directory of ['cmaps', 'standard_fonts', 'wasm']) {
+    for (const name of readdirSync(join(root, directory))) {
+      files.push(`${directory}/${name}`)
+    }
+  }
+  return {
+    name: 'zennotes-pdfjs-assets',
+    configResolved(config) { base = config.base; building = config.command === 'build' },
+    resolveId(id) { if (id === 'virtual:zennotes-pdfjs-assets') return virtual },
+    load(id) {
+      if (id !== virtual) return
+      if (!building) return `export default ${JSON.stringify(`${base === './' || base === '' ? '/' : base}pdfjs-assets/`)}`
+      const reference = this.emitFile({ type: 'asset', fileName: 'pdfjs-assets/anchor', source: '' })
+      return `export default new URL('./', import.meta.ROLLUP_FILE_URL_${reference}).href`
+    },
+    configureServer(server) {
+      const prefix = `${base === './' || base === '' ? '/' : base}pdfjs-assets/`
+      server.middlewares.use((req, res, next) => {
+        const path = req.url?.split('?')[0]
+        if (!path?.startsWith(prefix)) return next()
+        let name
+        try { name = decodeURIComponent(path.slice(prefix.length)) } catch { res.statusCode = 400; res.end(); return }
+        if (!files.includes(name)) { res.statusCode = 404; res.end(); return }
+        res.setHeader('Content-Type', name.endsWith('.wasm') ? 'application/wasm' : 'application/octet-stream')
+        createReadStream(join(root, name)).on('error', () => { res.statusCode = 404; res.end() }).pipe(res)
+      })
+    },
+    generateBundle() {
+      for (const name of files) this.emitFile({ type: 'asset', fileName: `pdfjs-assets/${name}`, source: readFileSync(join(root, name)) })
+    }
+  }
 }
