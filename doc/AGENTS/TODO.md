@@ -6,11 +6,11 @@
 - [x] Configurar `origin`/`upstream` y crear `feat/pdfjs-study` desde `main`. [Evidencia](../SeguimientoAgente/2026-11-23-preparacion-pdfjs.md).
 - [x] Preparar AGENTS, requisitos, seguimiento y esta lista; distinguir diseño de implementación. [Evidencia](../SeguimientoAgente/2026-11-23-preparacion-pdfjs.md).
 
-## Próximo incremento — después del encargo de implementación
+## Incremento 1 — inventario, contratos y línea base
 
-- [ ] Inventariar las entradas PDF (pestaña, referencia, embeds), enlaces actuales y búsquedas UI/MCP; documentar puntos de cambio y compatibilidad.
-- [ ] Concretar el contrato de enlaces de texto/región y los tipos de resultado PDF, con ejemplos y criterios de aceptación.
-- [ ] Comprobar herramientas/entorno, instalar dependencias del repo y registrar una línea base de las comprobaciones pertinentes.
+- [x] Inventariar las entradas PDF (pestaña, referencia, embeds), enlaces actuales y búsquedas UI/MCP. [Inventario](../Diseno/inventario-pdf.md).
+- [x] Concretar el contrato de enlaces de texto/región y los tipos de resultado PDF, con ejemplos y criterios de aceptación. [Contratos v1](../Diseno/contratos-pdf.md).
+- [x] Comprobar herramientas/entorno, instalar dependencias del repo y registrar una línea base de las comprobaciones pertinentes. [Resultados y límites](../SeguimientoAgente/2026-11-23-incremento-1-contratos-y-base.md).
 
 ## Fase 1 — visor integrado
 

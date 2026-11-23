@@ -4,7 +4,9 @@
 
 Este fork pretende incorporar PDF.js dentro de ZenNotes y añadir herramientas de estudio inspiradas en PDF++: enlaces a selecciones de texto y figuras, citas Markdown, atajos y navegación entre documentos y notas. La búsqueda de texto debe incluir el contenido de los PDF mediante `rga` o una alternativa justificada, tanto en la interfaz como en MCP `search_text`.
 
-Fuente de requisitos: conversación con el usuario del 23/11/2026. El usuario descartó la integración de Trazo como dirección del proyecto y prefirió PDF.js. Su último encargo autoriza crear el fork, clonarlo en `~/Work/` y preparar estas instrucciones. **La implementación funcional todavía no ha empezado y no forma parte de este incremento de preparación.** Al retomar, atender al nuevo encargo del usuario; esta constancia no es una prohibición permanente ni exige reconfirmar trabajo ya autorizado.
+Fuente de requisitos: conversación con el usuario del 23/11/2026. El usuario descartó la integración de Trazo como dirección del proyecto y prefirió PDF.js. La preparación del fork quedó completada. El encargo posterior autoriza el primer incremento de inventario, contratos y línea base, con subagentes Sol en esfuerzo bajo. **Este incremento no integra todavía PDF.js ni rga en el producto.** Al retomar, atender al nuevo encargo del usuario sin reconfirmar trabajo ya autorizado.
+
+Resultados vigentes: [inventario PDF y búsquedas](../Diseno/inventario-pdf.md), [contratos v1](../Diseno/contratos-pdf.md) y [evidencia del primer incremento](../SeguimientoAgente/2026-11-23-incremento-1-contratos-y-base.md).
 
 Consulta [TODO](TODO.md) y la [nota inicial](../SeguimientoAgente/2026-11-23-preparacion-pdfjs.md).
 
@@ -69,6 +71,6 @@ Primera entrega propuesta: escritorio Linux con vault local. Preservar compilaci
 3. Implementar y verificar en incrementos. Reutilizar patrones y pruebas existentes; añadir pruebas de comportamiento relevante, no tests que solo reproduzcan detalles internos.
 4. Registrar decisiones, pruebas ejecutadas y pendientes en `doc/SeguimientoAgente/`; actualizar TODO.
 
-Entorno upstream declarado: Node >=22.22, npm 10.9.2. Scripts de referencia: `npm run typecheck`, `npm run test:run`, `npm run build`; desarrollo con `npm run dev`. Comprobar las versiones y scripts reales al empezar. En cambios funcionales, ejecutar pruebas dirigidas y las comprobaciones requeridas por upstream antes de considerar una entrega lista. Para este incremento exclusivamente documental basta validar enlaces y diff; no se ha instalado el entorno ni ejecutado la suite.
+Entorno upstream declarado: Node >=22.22, npm 10.9.2. Scripts de referencia: `npm run typecheck`, `npm run test:run`, `npm run build`; desarrollo con `npm run dev`. Comprobar las versiones y scripts reales al empezar. En cambios funcionales, ejecutar pruebas dirigidas y las comprobaciones requeridas por upstream antes de considerar una entrega lista. La preparación del entorno y las verificaciones de referencia del primer incremento están registradas en su seguimiento; no confundir las pruebas dirigidas con una ejecución de toda la suite. Con Node 26, las pruebas jsdom requieren `NODE_OPTIONS=--no-experimental-webstorage`; usar npm 10.9.2 mediante `npx --yes npm@10.9.2 ci` para respetar el gestor declarado sin cambiar la instalación global.
 
 Casos mínimos para futuros incrementos: apertura offline, pestaña/panel, enlaces anteriores, texto multilínea, región de figura, zoom/rotación, resultado `rga` a página y coincidencia, PDF sin capa de texto, ausencia de `rga`, consultas canceladas, cambios de archivo y respeto de alcance MCP. Usar fixtures propios o públicos redistribuibles. Los PDF del vault Uni sirven como referencia manual privada, sin copiarlos al repositorio.
